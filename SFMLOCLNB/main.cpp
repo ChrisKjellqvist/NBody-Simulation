@@ -35,8 +35,7 @@ int getXPosition(float realX, float sizeX, int width){
     if (q > width) {
         return width-1;
     }
-    printf("%d\n", q);
-    return 0;
+    return q;
 }
 int getYPosition(float realY, float sizeY, int height){
     int q = (int)((realY/sizeY)*height);
@@ -45,7 +44,7 @@ int getYPosition(float realY, float sizeY, int height){
     if (q > height) {
         return height-1;
     }
-    return 0;
+    return q;
 
 }
 int main(int, char const**)
@@ -89,7 +88,6 @@ int main(int, char const**)
     float* vX = (float*)malloc(sizeof(float)*nofB);
     float* vY = (float*)malloc(sizeof(float)*nofB);
     float* masses = (float*)malloc(sizeof(float)*nofB);
-    
     for (int i = 0; i < nofB; i++) {
         pX[i] = space[i]->positionX;
         pY[i] = space[i]->positionY;
@@ -141,15 +139,15 @@ int main(int, char const**)
             {(size_t)nofB, 0, 0},
             {wgs, 0, 0}
         };
-//        for (int j = 0; j < 500; j++) {
-            for (int i = 0; i < 10000; i++) {
+        for (int j = 0; j < 1000; j++) {
+            for (int i = 0; i < 100; i++) {
                 iterateVelocityVectors_kernel(&range, (cl_float*)cl_pX, (cl_float*)cl_pY, (cl_float*)cl_vX, (cl_float*)cl_vY, (cl_float*)cl_masses, (cl_int*)cl_nofB);
                 iteratePositionsVectors_kernel(&range, (cl_float*)cl_pX, (cl_float*)cl_pY, (cl_float*)cl_vY, (cl_float*)cl_vX);
                 
             }
             gcl_memcpy(pX, cl_pX, sizeof(cl_float) * nofB);
             gcl_memcpy(pY, cl_pY, sizeof(cl_float) * nofB);
-//        }
+        }
         printf("done\n");
         
     });
@@ -172,7 +170,9 @@ int main(int, char const**)
         window.clear(sf::Color::Black);
         image.create(WINDOW_WIDTH, WINDOW_HEIGHT);
         for (int p = 0; p < nofB; p++) {
-            image.setPixel(getXPosition(pX[p], SOLAR_SYSTEM_DIAMETER, WINDOW_WIDTH), getYPosition(pY[p], SOLAR_SYSTEM_DIAMETER, WINDOW_HEIGHT), sf::Color::White);
+            int x = getXPosition(pX[p], SOLAR_SYSTEM_DIAMETER, WINDOW_WIDTH);
+            int y = getYPosition(pY[p], SOLAR_SYSTEM_DIAMETER, WINDOW_HEIGHT);
+            image.setPixel(x, y, sf::Color::White);
         }
         // drawing uses the same functions
         
@@ -186,7 +186,7 @@ int main(int, char const**)
         // end the current frame
         window.display();
     }
-    
+
     
     gcl_free(cl_pX);
     gcl_free(cl_pY);
@@ -200,7 +200,6 @@ int main(int, char const**)
     free(vX);
     free(vY);
     free(masses);
-    
     dispatch_release(queue);
     return EXIT_SUCCESS;
 }
