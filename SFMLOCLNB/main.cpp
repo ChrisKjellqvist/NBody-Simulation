@@ -14,7 +14,6 @@
 // function `resourcePath()` from ResourcePath.hpp
 //
 
-#include <SFML/Audio.hpp>
 #include <SFML/Graphics.hpp>
 #include <stdio.h>
 #include <stdlib.h>
@@ -22,37 +21,16 @@
 #include <OpenCL/opencl.h>
 #include "SolarSystem.hpp"
 #include "test.cl.h"
-
-#define WINDOW_WIDTH 1000
-#define WINDOW_HEIGHT 1000
-
-// Here is a small helper for you! Have a look.
 #include "ResourcePath.hpp"
-int getXPosition(float realX, float sizeX, int width){
-    int q = (int)((realX/sizeX)*width);
-    if (q < 0)
-        return 0;
-    if (q > width) {
-        return width-1;
-    }
-    return q;
-}
-int getYPosition(float realY, float sizeY, int height){
-    int q = (int)((realY/sizeY)*height);
-    if (q < 0)
-        return 0;
-    if (q > height) {
-        return height-1;
-    }
-    return q;
+#define WINDOW_SIZE 1000
 
-}
-int main(int, char const**)
-{
-    // Create the main window
-    sf::RenderWindow window(sf::VideoMode(WINDOW_WIDTH, WINDOW_HEIGHT), "SFML window");
+float scale = WINDOW_SIZE / SOLAR_SYSTEM_DIAMETER;
 
-    // Set the Icon
+int getScreenPosition(float realX, float scale, int translation){
+    return realX * scale + translation;
+}
+int main(int, char const**) {
+    sf::RenderWindow window(sf::VideoMode(WINDOW_SIZE, WINDOW_SIZE), "SFML window");
     sf::Image icon;
     if (!icon.loadFromFile(resourcePath() + "icon.png")) {
         return EXIT_FAILURE;
@@ -68,7 +46,6 @@ int main(int, char const**)
         space[j] = body_new_random();
     }
     
-    
     dispatch_queue_t queue =
     gcl_create_dispatch_queue(CL_DEVICE_TYPE_GPU, NULL);
     if (queue == NULL) {
@@ -77,11 +54,6 @@ int main(int, char const**)
     cl_device_id gpu = gcl_get_device_id_with_dispatch_queue(queue);
     clGetDeviceInfo(gpu, CL_DEVICE_NAME, 128, name, NULL);
     fprintf(stdout, "Created a dispatch queue using the %s\n", name);
-    
-    // Here we hardcode some test data.
-    // Normally, when this application is running for real, data would come from
-    // some REAL source, such as a camera, a sensor, or some compiled collection
-    // of statistics—it just depends on the problem you want to solve.
     
     float* pX = (float*)malloc(sizeof(float)*nofB);
     float* pY = (float*)malloc(sizeof(float)*nofB);
@@ -96,17 +68,6 @@ int main(int, char const**)
         masses[i] = space[i]->mass;
     }
     printf("%f\n", pX[0]);
-    // Once the computation using CL is done, will have to read the results
-    // back into our application's memory space.  Allocate some space for that.
-    //    float* test_out = (float*)m /alloc(sizeof(cl_float) * NUM_VALUES);
-    
-    // The test kernel takes two parameters: an input float array and an
-    // output float array.  We can't send the application's buffers above, since
-    // our CL device operates on its own memory space.  Therefore, we allocate
-    // OpenCL memory for doing the work.  Notice that for the input array,
-    // we specify CL_MEM_COPY_HOST_PTR and provide the fake input data we
-    // created above.  This tells OpenCL to copy the data into its memory
-    // space before it executes the kernel.                               // 3
     void* cl_pX = gcl_malloc(sizeof(cl_float) * nofB, pX, CL_MEM_READ_ONLY | CL_MEM_COPY_HOST_PTR);
     void* cl_pY = gcl_malloc(sizeof(cl_float) * nofB, pY, CL_MEM_READ_ONLY | CL_MEM_COPY_HOST_PTR);
     void* cl_vX = gcl_malloc(sizeof(cl_float) * nofB, vX, CL_MEM_READ_ONLY | CL_MEM_COPY_HOST_PTR);
@@ -114,27 +75,15 @@ int main(int, char const**)
     void* cl_masses = gcl_malloc(sizeof(cl_float) * nofB, masses, CL_MEM_READ_ONLY | CL_MEM_COPY_HOST_PTR);
     void* cl_nofB = gcl_malloc(sizeof(cl_int), &nofB, CL_MEM_READ_ONLY | CL_MEM_COPY_HOST_PTR);
     
-    // Dispatch the kernel block using one of the dispatch_ commands and the
-    // queue created earlier.                                            // 5
     dispatch_async(queue, ^{
-        // Although we could pass NULL as the workgroup size, which would tell
-        // OpenCL to pick the one it thinks is best, we can also ask
-        // OpenCL for the suggested size, and pass it ourselves.
         size_t wgs;
         gcl_get_kernel_block_workgroup_info(iteratePositionsVectors_kernel,
                                             CL_KERNEL_WORK_GROUP_SIZE,
                                             sizeof(wgs), &wgs, NULL);
         
-        // The N-Dimensional Range over which we'd like to execute our
-        // kernel.  In this case, we're operating on a 1D buffer, so
-        // it makes sense that the range is 1D.
-        cl_ndrange range = {                                              // 6
-            1,                     // The number of dimensions to use.
-            
+        cl_ndrange range = {
+            1,
             {0, 0, 0},
-            // The offset in each dimension.  To specify
-            // that all the data is processed, this is 0
-            // in the test case.                   // 7
             
             {(size_t)nofB, 0, 0},
             {wgs, 0, 0}
@@ -154,6 +103,7 @@ int main(int, char const**)
     sf::Image image;
 
     sf::Texture texture;
+//    image.create(WINDOW_WIDTH, WINDOW_HEIGHT);
 
     while (window.isOpen())
     {
@@ -164,14 +114,24 @@ int main(int, char const**)
             // "close requested" event: we close the window
             if (event.type == sf::Event::Closed)
                 window.close();
+            if (event.type == sf::Event::KeyPressed){
+                switch (event.key.code) {
+                    case sf::Keyboard::A:
+                        <#statements#>
+                        break;
+                        
+                    default:
+                        break;
+                }
+            }
         }
         
-        // clear the window with black color
         window.clear(sf::Color::Black);
-        image.create(WINDOW_WIDTH, WINDOW_HEIGHT);
+        
+        image.create(WINDOW_SIZE, WINDOW_SIZE);
         for (int p = 0; p < nofB; p++) {
-            int x = getXPosition(pX[p], SOLAR_SYSTEM_DIAMETER, WINDOW_WIDTH);
-            int y = getYPosition(pY[p], SOLAR_SYSTEM_DIAMETER, WINDOW_HEIGHT);
+            int x = getScreenPosition(pX[p], scale, 0);(pX[p], SOLAR_SYSTEM_DIAMETER, WINDOW_SIZE);
+            int y = getYPosition(pY[p], SOLAR_SYSTEM_DIAMETER, WINDOW_SIZE);
             image.setPixel(x, y, sf::Color::White);
         }
         // drawing uses the same functions
@@ -201,5 +161,7 @@ int main(int, char const**)
     free(vY);
     free(masses);
     dispatch_release(queue);
+    
+    printf("got to the end");
     return EXIT_SUCCESS;
 }

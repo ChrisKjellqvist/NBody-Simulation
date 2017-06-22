@@ -6,7 +6,7 @@
 //#error "Double precision floating point not supported by OpenCL implementation."
 //#endif
 #ifndef time_scalar
-#define time_scalar .03
+#define time_scalar .1
 #endif
 
 kernel void iterateVelocityVectors(global float* positionsX, global float* positionsY, global float* velocitiesX, global float* velocitiesY, global float* masses , global int* size){
@@ -25,8 +25,8 @@ kernel void iterateVelocityVectors(global float* positionsX, global float* posit
         float r = positionsY[j] - positionsY[i];
         float rsqrtdist = rsqrt(q*q + r*r);
         float dV = rsqrtdist * (float)6.67408e-11 * masses[j] * time_scalar;
-        velocitiesY[i] = velocitiesY[i] + r * rsqrtdist * dV;
-        velocitiesX[i] = velocitiesX[i] + q * rsqrtdist * dV;
+        velocitiesY[i] += r * rsqrtdist * dV;
+        velocitiesX[i] += q * rsqrtdist * dV;
 
     }
 }
