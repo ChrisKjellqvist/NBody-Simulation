@@ -7,7 +7,6 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
-		35D5487E1EFB9EF900101636 /* ResourcePath.mm in Sources */ = {isa = PBXBuildFile; fileRef = 35D5487D1EFB9EF900101636 /* ResourcePath.mm */; };
 		35D548811EFB9EF900101636 /* main.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 35D548801EFB9EF900101636 /* main.cpp */; };
 		35D548841EFB9EF900101636 /* cute_image.jpg in Resources */ = {isa = PBXBuildFile; fileRef = 35D548831EFB9EF900101636 /* cute_image.jpg */; };
 		35D548861EFB9EF900101636 /* nice_music.ogg in Resources */ = {isa = PBXBuildFile; fileRef = 35D548851EFB9EF900101636 /* nice_music.ogg */; };
@@ -21,8 +20,6 @@
 /* Begin PBXFileReference section */
 		35D548781EFB9EF900101636 /* SFMLOCLNB.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = SFMLOCLNB.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		35D5487C1EFB9EF900101636 /* SFMLOCLNB-Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = "SFMLOCLNB-Info.plist"; sourceTree = "<group>"; };
-		35D5487D1EFB9EF900101636 /* ResourcePath.mm */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.objcpp; path = ResourcePath.mm; sourceTree = "<group>"; };
-		35D5487F1EFB9EF900101636 /* ResourcePath.hpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.h; path = ResourcePath.hpp; sourceTree = "<group>"; };
 		35D548801EFB9EF900101636 /* main.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = main.cpp; sourceTree = "<group>"; };
 		35D548831EFB9EF900101636 /* cute_image.jpg */ = {isa = PBXFileReference; lastKnownFileType = image.jpeg; path = cute_image.jpg; sourceTree = "<group>"; };
 		35D548851EFB9EF900101636 /* nice_music.ogg */ = {isa = PBXFileReference; lastKnownFileType = file; path = nice_music.ogg; sourceTree = "<group>"; };
@@ -66,8 +63,6 @@
 		35D5487A1EFB9EF900101636 /* SFMLOCLNB */ = {
 			isa = PBXGroup;
 			children = (
-				35D5487D1EFB9EF900101636 /* ResourcePath.mm */,
-				35D5487F1EFB9EF900101636 /* ResourcePath.hpp */,
 				35D548801EFB9EF900101636 /* main.cpp */,
 				35D548951EFB9F7B00101636 /* SolarSystem.cpp */,
 				35D548961EFB9F7B00101636 /* SolarSystem.hpp */,
@@ -196,7 +191,6 @@
 				35D548941EFB9F6100101636 /* test.cl in Sources */,
 				35D548811EFB9EF900101636 /* main.cpp in Sources */,
 				35D548971EFB9F7B00101636 /* SolarSystem.cpp in Sources */,
-				35D5487E1EFB9EF900101636 /* ResourcePath.mm in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -328,6 +322,7 @@
 				35D5488F1EFB9EF900101636 /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
 		};
 /* End XCConfigurationList section */
 	};

@@ -29,10 +29,3 @@ Body* body_new_with_params(float vX, float vY, float pX, float pY, float mass){
     b->velocityY = vY;
     return b;
 }
-int getScreenPosX(float ratio, Body* body){
-    return body->positionX * ratio;
-}
-int getScreenPosY(float ratio, Body* body){
-    return body->positionY * ratio;
-}
-
