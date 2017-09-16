@@ -8,23 +8,14 @@
 
 /* Begin PBXBuildFile section */
 		35D548811EFB9EF900101636 /* main.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 35D548801EFB9EF900101636 /* main.cpp */; };
-		35D548841EFB9EF900101636 /* cute_image.jpg in Resources */ = {isa = PBXBuildFile; fileRef = 35D548831EFB9EF900101636 /* cute_image.jpg */; };
-		35D548861EFB9EF900101636 /* nice_music.ogg in Resources */ = {isa = PBXBuildFile; fileRef = 35D548851EFB9EF900101636 /* nice_music.ogg */; };
-		35D548881EFB9EF900101636 /* sansation.ttf in Resources */ = {isa = PBXBuildFile; fileRef = 35D548871EFB9EF900101636 /* sansation.ttf */; };
-		35D5488A1EFB9EF900101636 /* icon.png in Resources */ = {isa = PBXBuildFile; fileRef = 35D548891EFB9EF900101636 /* icon.png */; };
 		35D548921EFB9F2100101636 /* OpenCL.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 35D548911EFB9F2100101636 /* OpenCL.framework */; };
 		35D548941EFB9F6100101636 /* test.cl in Sources */ = {isa = PBXBuildFile; fileRef = 35D548931EFB9F6100101636 /* test.cl */; };
 		35D548971EFB9F7B00101636 /* SolarSystem.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 35D548951EFB9F7B00101636 /* SolarSystem.cpp */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
-		35D548781EFB9EF900101636 /* SFMLOCLNB.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = SFMLOCLNB.app; sourceTree = BUILT_PRODUCTS_DIR; };
-		35D5487C1EFB9EF900101636 /* SFMLOCLNB-Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = "SFMLOCLNB-Info.plist"; sourceTree = "<group>"; };
+		35D548781EFB9EF900101636 /* SFMLOCLNB.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; name = SFMLOCLNB.app; path = /Users/chris/XCodeProjects/openCLNBody/build/Debug/SFMLOCLNB.app; sourceTree = "<absolute>"; };
 		35D548801EFB9EF900101636 /* main.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = main.cpp; sourceTree = "<group>"; };
-		35D548831EFB9EF900101636 /* cute_image.jpg */ = {isa = PBXFileReference; lastKnownFileType = image.jpeg; path = cute_image.jpg; sourceTree = "<group>"; };
-		35D548851EFB9EF900101636 /* nice_music.ogg */ = {isa = PBXFileReference; lastKnownFileType = file; path = nice_music.ogg; sourceTree = "<group>"; };
-		35D548871EFB9EF900101636 /* sansation.ttf */ = {isa = PBXFileReference; lastKnownFileType = file; path = sansation.ttf; sourceTree = "<group>"; };
-		35D548891EFB9EF900101636 /* icon.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = icon.png; sourceTree = "<group>"; };
 		35D548911EFB9F2100101636 /* OpenCL.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = OpenCL.framework; path = System/Library/Frameworks/OpenCL.framework; sourceTree = SDKROOT; };
 		35D548931EFB9F6100101636 /* test.cl */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.opencl; path = test.cl; sourceTree = "<group>"; };
 		35D548951EFB9F7B00101636 /* SolarSystem.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = SolarSystem.cpp; sourceTree = "<group>"; };
@@ -47,17 +38,8 @@
 			isa = PBXGroup;
 			children = (
 				35D5487A1EFB9EF900101636 /* SFMLOCLNB */,
-				35D548791EFB9EF900101636 /* Products */,
 				35D548901EFB9F2100101636 /* Frameworks */,
 			);
-			sourceTree = "<group>";
-		};
-		35D548791EFB9EF900101636 /* Products */ = {
-			isa = PBXGroup;
-			children = (
-				35D548781EFB9EF900101636 /* SFMLOCLNB.app */,
-			);
-			name = Products;
 			sourceTree = "<group>";
 		};
 		35D5487A1EFB9EF900101636 /* SFMLOCLNB */ = {
@@ -67,29 +49,8 @@
 				35D548951EFB9F7B00101636 /* SolarSystem.cpp */,
 				35D548961EFB9F7B00101636 /* SolarSystem.hpp */,
 				35D548931EFB9F6100101636 /* test.cl */,
-				35D548821EFB9EF900101636 /* Resources */,
-				35D5487B1EFB9EF900101636 /* Supporting Files */,
 			);
 			path = SFMLOCLNB;
-			sourceTree = "<group>";
-		};
-		35D5487B1EFB9EF900101636 /* Supporting Files */ = {
-			isa = PBXGroup;
-			children = (
-				35D5487C1EFB9EF900101636 /* SFMLOCLNB-Info.plist */,
-			);
-			name = "Supporting Files";
-			sourceTree = "<group>";
-		};
-		35D548821EFB9EF900101636 /* Resources */ = {
-			isa = PBXGroup;
-			children = (
-				35D548831EFB9EF900101636 /* cute_image.jpg */,
-				35D548851EFB9EF900101636 /* nice_music.ogg */,
-				35D548871EFB9EF900101636 /* sansation.ttf */,
-				35D548891EFB9EF900101636 /* icon.png */,
-			);
-			name = Resources;
 			sourceTree = "<group>";
 		};
 		35D548901EFB9F2100101636 /* Frameworks */ = {
@@ -144,7 +105,7 @@
 				en,
 			);
 			mainGroup = 35D5486E1EFB9EF900101636;
-			productRefGroup = 35D548791EFB9EF900101636 /* Products */;
+			productRefGroup = 35D5486E1EFB9EF900101636;
 			projectDirPath = "";
 			projectRoot = "";
 			targets = (
@@ -158,10 +119,6 @@
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				35D5488A1EFB9EF900101636 /* icon.png in Resources */,
-				35D548881EFB9EF900101636 /* sansation.ttf in Resources */,
-				35D548861EFB9EF900101636 /* nice_music.ogg in Resources */,
-				35D548841EFB9EF900101636 /* cute_image.jpg in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
