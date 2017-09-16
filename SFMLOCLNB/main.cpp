@@ -26,7 +26,7 @@ int getScreenPos(float realPos, float realSize, int screenDim){
     if (q > screenDim) {
         q = screenDim;
     }
-    
+    return q;
 }
 void enqueueOnDevice(float* pX, float* pY, float* vX, float* vY, float* masses, int nofB){
     char name[128];
@@ -47,7 +47,7 @@ void enqueueOnDevice(float* pX, float* pY, float* vX, float* vY, float* masses, 
         size_t wgs;
         gcl_get_kernel_block_workgroup_info(iteratePositionsVectors_kernel, CL_KERNEL_WORK_GROUP_SIZE, sizeof(wgs), &wgs, NULL);
         cl_ndrange range = {1, {0, 0, 0}, {(size_t)nofB, 0, 0}, {wgs, 0, 0}};
-        for (int j = 0; j < 2000; j++) {
+        for (int j = 0; j < 2000 && !status; j++) {
             for (int i = 0; i < 50; i++) {
                 iterateVelocityVectors_kernel(&range, (cl_float*)cl_pX, (cl_float*)cl_pY, (cl_float*)cl_vX, (cl_float*)cl_vY, (cl_float*)cl_masses, (cl_int*)cl_nofB);
                 iteratePositionsVectors_kernel(&range, (cl_float*)cl_pX, (cl_float*)cl_pY, (cl_float*)cl_vY, (cl_float*)cl_vX);
@@ -56,8 +56,13 @@ void enqueueOnDevice(float* pX, float* pY, float* vX, float* vY, float* masses, 
             gcl_memcpy(pX, cl_pX, sizeof(cl_float) * nofB);
             gcl_memcpy(pY, cl_pY, sizeof(cl_float) * nofB);
             cv.notify_all();
+            if (j%200==0) {
+                printf("%d\n", j);
+            }
         }
     });
+    printf("exited");
+    status = KILL;
     gcl_free(cl_pX);
     gcl_free(cl_pY);
     gcl_free(cl_vX);
@@ -89,20 +94,21 @@ int main(int, char const**) {
     std::thread gpuThread(enqueueOnDevice, pX, pY, vX, vY, masses, nofB);
     sf::Image image;
     sf::Texture texture;
-    while (window.isOpen()) {
+    int go = 1;
+    while (window.isOpen() | go) {
         sf::Event event;
-        while (window.pollEvent(event) | status){
-            if (event.type == sf::Event::Closed)
+        while (window.pollEvent(event) | (status && go)){
+            if ((event.type == sf::Event::Closed) | status){
                 window.close();
-            if (status) {
-                window.close();
+                go = 0;
+                status = KILL;
             }
         }
-        window.clear(sf::Color::Black);
-        image.create(WINDOW_SIZE, WINDOW_SIZE);
         std::unique_lock<std::mutex> lock(mut);
         cv.wait(lock);
-        for (int p = 0; p < nofB; p++) {
+        window.clear(sf::Color::Black);
+        image.create(WINDOW_SIZE, WINDOW_SIZE);
+        for (int p = 0; p < nofB; ++p) {
             int x = getScreenPos(pX[p], SOLAR_SYSTEM_DIAMETER, WINDOW_SIZE);
             int y = getScreenPos(pY[p], SOLAR_SYSTEM_DIAMETER, WINDOW_SIZE);
             image.setPixel(x, y, sf::Color::White);
@@ -114,7 +120,6 @@ int main(int, char const**) {
         window.draw(bufferSprite);
         window.display();
     }
-    
     gpuThread.join();
     free(pX);
     free(pY);
