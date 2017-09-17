@@ -14,10 +14,10 @@ Body* body_new_random() {
     Body* b = (Body*)malloc(sizeof(Body));
     b->mass = ((double)(rand())/RAND_MAX) * (double)(5e24);
 
-    b->positionX = ((double)(rand())/RAND_MAX) * SOLAR_SYSTEM_DIAMETER *.5+SOLAR_SYSTEM_DIAMETER*.25;
-    b->positionY = ((double)(rand())/RAND_MAX) * SOLAR_SYSTEM_DIAMETER *.5+SOLAR_SYSTEM_DIAMETER*.25;
-    b->velocityX = 10000*((double)(rand())/RAND_MAX);
-    b->velocityY = ((double)(rand())/RAND_MAX)*1000;
+    b->positionX = ((double)(rand())/RAND_MAX) * SOLAR_SYSTEM_DIAMETER;
+    b->positionY = ((double)(rand())/RAND_MAX) * SOLAR_SYSTEM_DIAMETER;
+    b->velocityX = 100000*((double)(rand())/RAND_MAX)-50000;
+    b->velocityY = 100000*((double)(rand())/RAND_MAX)-50000;
         return b;
 }
 Body* body_new_with_params(float vX, float vY, float pX, float pY, float mass){
