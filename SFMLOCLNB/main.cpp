@@ -3,6 +3,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <time.h>
+#include <math.h>
 #include <OpenCL/opencl.h>
 #include <condition_variable>
 #include <chrono>
@@ -11,14 +12,15 @@
 #include "SolarSystem.hpp"
 #include "test.cl.h"
 
-#define WINDOW_SIZE 1000
+#define WINDOW_SIZE 1500
 #define WAIT 0
 #define KILL 1
 int status = WAIT;
 std::condition_variable cv;
 std::mutex mut;
 
-int nofB = 512;
+int nofB = 256;
+int lostBodies = 0;
 /*
  * convert position in space to position on the screen. We do this by defining boundaries at
  * 0 and "realsize," and converting that to boundaries at 0 and screenDim. Whenever I get 
@@ -50,85 +52,96 @@ void enqueueOnDevice(float* pX, float* pY, float* vX, float* vY, float* masses, 
     cl_device_id gpu = gcl_get_device_id_with_dispatch_queue(queue);
     clGetDeviceInfo(gpu, CL_DEVICE_NAME, 128, name, NULL);
     fprintf(stdout, "Created a dispatch queue using the %s\n", name);
-    int* flags = (int*)malloc(sizeof(int)*nofB);
+    int* masks = (int*)malloc(sizeof(int)*nofB);
     for (int i = 0; i < nofB; i++) {
-        flags[i] = 0;
+        masks[i] = -1;
     }
-    void* cl_pX = gcl_malloc(sizeof(cl_float) * (nofB+1), pX, CL_MEM_READ_ONLY | CL_MEM_COPY_HOST_PTR);
-    void* cl_pY = gcl_malloc(sizeof(cl_float) * nofB, pY, CL_MEM_READ_ONLY | CL_MEM_COPY_HOST_PTR);
-    void* cl_vX = gcl_malloc(sizeof(cl_float) * nofB, vX, CL_MEM_READ_ONLY | CL_MEM_COPY_HOST_PTR);
-    void* cl_vY = gcl_malloc(sizeof(cl_float) * nofB, vY, CL_MEM_READ_ONLY | CL_MEM_COPY_HOST_PTR);
-    void* cl_masses = gcl_malloc(sizeof(cl_float) * nofB, masses, CL_MEM_READ_ONLY | CL_MEM_COPY_HOST_PTR);
-    void* cl_nofB = gcl_malloc(sizeof(cl_int), &nofB, CL_MEM_READ_ONLY | CL_MEM_COPY_HOST_PTR);
-    void* cl_flags = gcl_malloc(sizeof(cl_int) * nofB, flags, CL_MEM_READ_ONLY | CL_MEM_COPY_HOST_PTR);
+    cl_int* cl_nofB = (cl_int*)gcl_malloc(sizeof(cl_int), &nofB, CL_MEM_READ_ONLY | CL_MEM_COPY_HOST_PTR);
     dispatch_sync(queue, ^{
+        cl_float* cl_pX = (cl_float*)gcl_malloc(sizeof(cl_float) * nofB, pX, CL_MEM_READ_ONLY | CL_MEM_COPY_HOST_PTR);
+        cl_float* cl_pY = (cl_float*)gcl_malloc(sizeof(cl_float) * nofB, pY, CL_MEM_READ_ONLY | CL_MEM_COPY_HOST_PTR);
+        cl_float* cl_vX = (cl_float*)gcl_malloc(sizeof(cl_float) * nofB, vX, CL_MEM_READ_ONLY | CL_MEM_COPY_HOST_PTR);
+        cl_float* cl_vY = (cl_float*)gcl_malloc(sizeof(cl_float) * nofB, vY, CL_MEM_READ_ONLY | CL_MEM_COPY_HOST_PTR);
+        cl_float* cl_masses = (cl_float*)gcl_malloc(sizeof(cl_float) * nofB, masses, CL_MEM_READ_ONLY | CL_MEM_COPY_HOST_PTR);
+        cl_int* cl_masks = (cl_int*)gcl_malloc(sizeof(cl_int) * nofB, masks, CL_MEM_READ_ONLY | CL_MEM_COPY_HOST_PTR);
         size_t wgs;
         gcl_get_kernel_block_workgroup_info(iteratePositionsVectors_kernel, CL_KERNEL_WORK_GROUP_SIZE, sizeof(wgs), &wgs, NULL);
         cl_ndrange range = {1, {0, 0, 0}, {(size_t)nofB, 0, 0}, {wgs, 0, 0}};
-        int lostBodies = 0;
         for (int j = 0; j < 2000 && !status; j++) {
+            gcl_memcpy(pX, cl_pX, sizeof(cl_float) * nofB);
+            gcl_memcpy(pY, cl_pY, sizeof(cl_float) * nofB);
+            gcl_memcpy(masks, cl_masks, sizeof(cl_float)*nofB);
             for (int i = 0; i < 50; i++) {
-                iterateVelocityVectors_kernel(&range, (cl_float*)cl_pX, (cl_float*)cl_pY, (cl_float*)cl_vX, (cl_float*)cl_vY, (cl_float*)cl_masses, (cl_int*)cl_nofB);
-                iteratePositionsVectors_kernel(&range, (cl_float*)cl_pX, (cl_float*)cl_pY, (cl_float*)cl_vY, (cl_float*)cl_vX);
+                iterateVelocityVectors_kernel(&range, cl_pX, cl_pY, cl_vX, cl_vY, cl_masses, cl_nofB, cl_masks);
+                iteratePositionsVectors_kernel(&range, cl_pX, cl_pY, cl_vY, cl_vX, cl_masks);
             }
             std::lock_guard<std::mutex> lck(mut);
-            gcl_memcpy(pX, cl_pX, sizeof(cl_float) * (nofB+1));
-            gcl_memcpy(pY, cl_pY, sizeof(cl_float) * nofB);
-            if (pX[nofB]) {
-                int b1 = (int)(pX[nofB])/512;
-                int b2 = (int)pX[nofB]>>9;
-                float newMass = masses[b1]+masses[b2];
-                float newVx = (vX[b1]*masses[b1]+vX[b2]*masses[b2])/newMass;
-                float newVy = (vY[b1]*masses[b1]+vY[b2]*masses[b2])/newMass;
-                float newPx = vX[b1];
-                float newPy = vY[b1];
-                lostBodies+=2;
-                for (int i = 0, j = 0; i < nofB - lostBodies; i++) {
-                    if (i == b1 | i == b2)
-                        continue;
-                    pX[j] = pX[i];
-                    pY[j] = pY[i];
-                    vX[j] = vX[i];
-                    vY[j] = vY[i];
-                    masses[j] = masses[i];
-                    ++j;
+            for (int i = 0; i < nofB - lostBodies; i++) {
+                if (masks[i]==-2) {
+                    int b2 = -1;
+                    int b1 = i;
+                    for (int j = i+1; j < nofB-lostBodies; j++) {
+                        if (masks[j] == -2) {
+                            b2 = j;
+                            j = nofB-lostBodies;
+                        }
+                    }
+                    if (b2 == -1) {
+                        break;
+                    }
+                    printf("collision %d\n", nofB-lostBodies);
+                    masks[b1] = -1;
+                    masks[b2] = -1;
+                    masses[b1] = masses[b1]+masses[b2];
+                    vX[b1] = (vX[b1]*masses[b1]+vX[b2]*masses[b2])/masses[b1];
+                    vY[b1] = (vY[b1]*masses[b1]+vY[b2]*masses[b2])/masses[b1];
+                    lostBodies+=1;
+                    for (int i = 0, j = 0; i < nofB; i++) {
+                        if (i == b2)
+                            continue;
+                        pX[j] = pX[i];
+                        pY[j] = pY[i];
+                        vX[j] = vX[i];
+                        vY[j] = vY[i];
+                        masks[j] = masks[i] | (masks[i]>>1);
+                        masses[j] = masses[i];
+                        ++j;
+                    }
+                    gcl_free(cl_pX);
+                    gcl_free(cl_pY);
+                    gcl_free(cl_vX);
+                    gcl_free(cl_vY);
+                    gcl_free(cl_masks);
+                    gcl_free(cl_masses);
+                    for (int j = nofB-lostBodies; j < nofB; j++) {
+                        pX[j] = 0;
+                        pY[j] = 0;
+                        vX[j] = 0;
+                        vY[j] = 0;
+                        masses[j] = 0;
+                        masks[j] = 0;
+                    }
+                    cl_pX = (cl_float*)gcl_malloc(sizeof(cl_float) * nofB, pX, CL_MEM_READ_ONLY | CL_MEM_COPY_HOST_PTR);
+                    cl_pY = (cl_float*)gcl_malloc(sizeof(cl_float) * nofB, pY, CL_MEM_READ_ONLY | CL_MEM_COPY_HOST_PTR);
+                    cl_vX = (cl_float*)gcl_malloc(sizeof(cl_float) * nofB, vX, CL_MEM_READ_ONLY | CL_MEM_COPY_HOST_PTR);
+                    cl_vY = (cl_float*)gcl_malloc(sizeof(cl_float) * nofB, vY, CL_MEM_READ_ONLY | CL_MEM_COPY_HOST_PTR);
+                    cl_masses = (cl_float*)gcl_malloc(sizeof(cl_float) * nofB, masses, CL_MEM_READ_ONLY | CL_MEM_COPY_HOST_PTR);
+                    cl_masks = (cl_int*)gcl_malloc(sizeof(cl_int) * nofB, masks, CL_MEM_READ_ONLY | CL_MEM_COPY_HOST_PTR);
                 }
-                pX[nofB-lostBodies+1] = newPx;
-                pY[nofB-lostBodies+1] = newPy;
-                vX[nofB-lostBodies+1] = newVx;
-                vY[nofB-lostBodies+1] = newVy;
-                masses[nofB-lostBodies+1] = newMass;
-                gcl_free(cl_pX);
-                gcl_free(cl_pY);
-                gcl_free(cl_vX);
-                gcl_free(cl_vY);
-                gcl_free(cl_flags);
-                gcl_free(cl_masses);
-                for (int j = nofB-lostBodies+2; j<nofB+1; j++) {
-                    pX[j] = 0;
-                    pY[j] = 0;
-                    vX[j] = 0;
-                    vY[j] = 0;
-                    masses[j] = 0;
-                    flags[j] = 1;
-                }
-                void* cl_pX = gcl_malloc(sizeof(cl_float) * (nofB+1), pX, CL_MEM_READ_ONLY | CL_MEM_COPY_HOST_PTR);
-                void* cl_pY = gcl_malloc(sizeof(cl_float) * nofB, pY, CL_MEM_READ_ONLY | CL_MEM_COPY_HOST_PTR);
-                void* cl_vX = gcl_malloc(sizeof(cl_float) * nofB, vX, CL_MEM_READ_ONLY | CL_MEM_COPY_HOST_PTR);
-                void* cl_vY = gcl_malloc(sizeof(cl_float) * nofB, vY, CL_MEM_READ_ONLY | CL_MEM_COPY_HOST_PTR);
-                void* cl_masses = gcl_malloc(sizeof(cl_float) * nofB, masses, CL_MEM_READ_ONLY | CL_MEM_COPY_HOST_PTR);
-                void* cl_flags = gcl_malloc(sizeof(cl_int) * nofB, flags, CL_MEM_READ_ONLY | CL_MEM_COPY_HOST_PTR);
             }
+//        }
             cv.notify_all();
         }
+        printf("leaving gpu\n");
+        gcl_free(cl_pX);
+        gcl_free(cl_pY);
+        gcl_free(cl_vX);
+        gcl_free(cl_vY);
+        gcl_free(cl_masses);
+        gcl_free(cl_nofB);
     });
     status = KILL;
-    gcl_free(cl_pX);
-    gcl_free(cl_pY);
-    gcl_free(cl_vX);
-    gcl_free(cl_vY);
-    gcl_free(cl_masses);
-    gcl_free(cl_nofB);
+    cv.notify_all();
     dispatch_release(queue);
 }
 int main(int, char const**) {
@@ -139,7 +152,7 @@ int main(int, char const**) {
     for (int j = 0; j < nofB; j++) {
         space[j] = body_new_random();
     }
-    float* pX = (float*)malloc(sizeof(float)*(nofB+1));
+    float* pX = (float*)malloc(sizeof(float)*nofB);
     float* pY = (float*)malloc(sizeof(float)*nofB);
     float* vX = (float*)malloc(sizeof(float)*nofB);
     float* vY = (float*)malloc(sizeof(float)*nofB);
@@ -169,7 +182,7 @@ int main(int, char const**) {
         cv.wait(lock);
         window.clear(sf::Color::Black);
         image.create(WINDOW_SIZE, WINDOW_SIZE);
-        for (int p = 0; (p < nofB) & !status; ++p) {
+        for (int p = 0; (p < nofB - lostBodies) & !status; ++p) {
             int x = getScreenPos(pX[p], SOLAR_SYSTEM_DIAMETER, WINDOW_SIZE);
             int y = getScreenPos(pY[p], SOLAR_SYSTEM_DIAMETER, WINDOW_SIZE);
             image.setPixel(x, y, sf::Color::White);
