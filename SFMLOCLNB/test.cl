@@ -16,7 +16,7 @@ kernel void iterateVelocityVectors(global float* positionsX, global float* posit
     for (int j = 0; j < i; j++ ){
         float q = positionsX[j] - positionsX[i];
         float r = positionsY[j] - positionsY[i];
-        if (fabs(q)+fabs(r)<500000){
+        if (fabs(q)+fabs(r)<1000000){
             flags[i] = -2;
         }
         float rsqrtdist = rsqrt(q*q + r*r);
@@ -28,7 +28,7 @@ kernel void iterateVelocityVectors(global float* positionsX, global float* posit
     for (int j = i+1; (flags[j+1]) & (j < *size); j++){
         float q = positionsX[j] - positionsX[i];
         float r = positionsY[j] - positionsY[i];
-        if (fabs(q)+fabs(r)<500000){
+        if (fabs(q)+fabs(r)<1000000){
             flags[i] = -2;
         }
         float rsqrtdist = rsqrt(q*q + r*r);
@@ -38,18 +38,11 @@ kernel void iterateVelocityVectors(global float* positionsX, global float* posit
     }
 }
 
-kernel void iteratePositionsVectors(global float* positionsX, global float* positionsY, global float* velocitiesY, global float* velocitiesX, global int* flags){
+kernel void iteratePositionsVectors(global float* positionsX, global float* positionsY, global float* velocitiesY, global float* velocitiesX, global int* masks){
     size_t i = get_global_id(0);
-    int m = (flags[i] | (flags[i] >> 1));
-    float a = (velocitiesX[i] * time_scalar);
-    int temp = *(int *) ((void *) &a) & m;
-    a = *(float *) (&temp);
-    positionsX[i] += a;
-    
-    a = (velocitiesY[i] * time_scalar);
-    temp = *(int *) ((void *) &a) & m;
-    a = *(float *) (&temp);
-    positionsY[i] += a;
+    bool modifiedMask = ((masks[i] | (masks[i] >> 1))==-1);
+    positionsX[i] += (velocitiesX[i] * time_scalar) * modifiedMask;
+    positionsY[i] += (velocitiesY[i] * time_scalar) * modifiedMask;
 //    positionsX[i] += velocitiesX[i] * time_scalar;
 //    positionsY[i] += velocitiesY[i] * time_scalar;
 }

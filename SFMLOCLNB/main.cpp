@@ -19,7 +19,7 @@ int status = WAIT;
 std::condition_variable cv;
 std::mutex mut;
 
-int nofB = 256;
+int nofB = 512;
 int lostBodies = 0;
 /*
  * convert position in space to position on the screen. We do this by defining boundaries at
@@ -67,72 +67,75 @@ void enqueueOnDevice(float* pX, float* pY, float* vX, float* vY, float* masses, 
         size_t wgs;
         gcl_get_kernel_block_workgroup_info(iteratePositionsVectors_kernel, CL_KERNEL_WORK_GROUP_SIZE, sizeof(wgs), &wgs, NULL);
         cl_ndrange range = {1, {0, 0, 0}, {(size_t)nofB, 0, 0}, {wgs, 0, 0}};
-        for (int j = 0; j < 2000 && !status; j++) {
+        for (int j = 0; j < 10000 && !status; j++) {
             gcl_memcpy(pX, cl_pX, sizeof(cl_float) * nofB);
             gcl_memcpy(pY, cl_pY, sizeof(cl_float) * nofB);
             gcl_memcpy(masks, cl_masks, sizeof(cl_float)*nofB);
             for (int i = 0; i < 50; i++) {
                 iterateVelocityVectors_kernel(&range, cl_pX, cl_pY, cl_vX, cl_vY, cl_masses, cl_nofB, cl_masks);
                 iteratePositionsVectors_kernel(&range, cl_pX, cl_pY, cl_vY, cl_vX, cl_masks);
-            }
-            std::lock_guard<std::mutex> lck(mut);
-            for (int i = 0; i < nofB - lostBodies; i++) {
-                if (masks[i]==-2) {
-                    int b2 = -1;
-                    int b1 = i;
-                    for (int j = i+1; j < nofB-lostBodies; j++) {
-                        if (masks[j] == -2) {
-                            b2 = j;
-                            j = nofB-lostBodies;
+                int triggered = 0;
+                for (int i = 0; i < nofB - lostBodies; i++) {
+                    if (masks[i]==-2) {
+                        triggered = 1;
+                        int b2 = -1;
+                        int b1 = i;
+                        for (int j = i+1; j < nofB-lostBodies; j++) {
+                            if (masks[j] == -2) {
+                                b2 = j;
+                                j = nofB-lostBodies;
+                            }
                         }
+                        if (b2 == -1) {
+                            break;
+                        }
+                        printf("collision %d\n", nofB-lostBodies);
+//                        masks[b1] = -1;
+//                        masks[b2] = -1;
+                        masses[b1] = masses[b1]+masses[b2];
+                        vX[b1] = (vX[b1]*masses[b1]+vX[b2]*masses[b2])/masses[b1];
+                        vY[b1] = (vY[b1]*masses[b1]+vY[b2]*masses[b2])/masses[b1];
+                        lostBodies+=1;
+                        for (int i = 0, j = 0; i < nofB; i++) {
+                            if (i == b2)
+                                continue;
+                            pX[j] = pX[i];
+                            pY[j] = pY[i];
+                            vX[j] = vX[i];
+                            vY[j] = vY[i];
+                            masks[j] = masks[i];
+                            masses[j] = masses[i];
+                            ++j;
+                        }
+                        gcl_free(cl_pX);
+                        gcl_free(cl_pY);
+                        gcl_free(cl_vX);
+                        gcl_free(cl_vY);
+                        gcl_free(cl_masks);
+                        gcl_free(cl_masses);
+                        for (int j = nofB-lostBodies; j < nofB; j++) {
+                            masks[j] = 0;
+                        }
+                        cl_pX = (cl_float*)gcl_malloc(sizeof(cl_float) * nofB, pX, CL_MEM_READ_ONLY | CL_MEM_COPY_HOST_PTR);
+                        cl_pY = (cl_float*)gcl_malloc(sizeof(cl_float) * nofB, pY, CL_MEM_READ_ONLY | CL_MEM_COPY_HOST_PTR);
+                        cl_vX = (cl_float*)gcl_malloc(sizeof(cl_float) * nofB, vX, CL_MEM_READ_ONLY | CL_MEM_COPY_HOST_PTR);
+                        cl_vY = (cl_float*)gcl_malloc(sizeof(cl_float) * nofB, vY, CL_MEM_READ_ONLY | CL_MEM_COPY_HOST_PTR);
+                        cl_masses = (cl_float*)gcl_malloc(sizeof(cl_float) * nofB, masses, CL_MEM_READ_ONLY | CL_MEM_COPY_HOST_PTR);
+                        cl_masks = (cl_int*)gcl_malloc(sizeof(cl_int) * nofB, masks, CL_MEM_READ_ONLY | CL_MEM_COPY_HOST_PTR);
                     }
-                    if (b2 == -1) {
-                        break;
+                }
+                if (triggered) {
+                    for (int i = 0; i < nofB; i++) {
+                        masks[i] = masks[i] | (masks[i] >> 1);
                     }
-                    printf("collision %d\n", nofB-lostBodies);
-                    masks[b1] = -1;
-                    masks[b2] = -1;
-                    masses[b1] = masses[b1]+masses[b2];
-                    vX[b1] = (vX[b1]*masses[b1]+vX[b2]*masses[b2])/masses[b1];
-                    vY[b1] = (vY[b1]*masses[b1]+vY[b2]*masses[b2])/masses[b1];
-                    lostBodies+=1;
-                    for (int i = 0, j = 0; i < nofB; i++) {
-                        if (i == b2)
-                            continue;
-                        pX[j] = pX[i];
-                        pY[j] = pY[i];
-                        vX[j] = vX[i];
-                        vY[j] = vY[i];
-                        masks[j] = masks[i] | (masks[i]>>1);
-                        masses[j] = masses[i];
-                        ++j;
-                    }
-                    gcl_free(cl_pX);
-                    gcl_free(cl_pY);
-                    gcl_free(cl_vX);
-                    gcl_free(cl_vY);
-                    gcl_free(cl_masks);
-                    gcl_free(cl_masses);
-                    for (int j = nofB-lostBodies; j < nofB; j++) {
-                        pX[j] = 0;
-                        pY[j] = 0;
-                        vX[j] = 0;
-                        vY[j] = 0;
-                        masses[j] = 0;
-                        masks[j] = 0;
-                    }
-                    cl_pX = (cl_float*)gcl_malloc(sizeof(cl_float) * nofB, pX, CL_MEM_READ_ONLY | CL_MEM_COPY_HOST_PTR);
-                    cl_pY = (cl_float*)gcl_malloc(sizeof(cl_float) * nofB, pY, CL_MEM_READ_ONLY | CL_MEM_COPY_HOST_PTR);
-                    cl_vX = (cl_float*)gcl_malloc(sizeof(cl_float) * nofB, vX, CL_MEM_READ_ONLY | CL_MEM_COPY_HOST_PTR);
-                    cl_vY = (cl_float*)gcl_malloc(sizeof(cl_float) * nofB, vY, CL_MEM_READ_ONLY | CL_MEM_COPY_HOST_PTR);
-                    cl_masses = (cl_float*)gcl_malloc(sizeof(cl_float) * nofB, masses, CL_MEM_READ_ONLY | CL_MEM_COPY_HOST_PTR);
-                    cl_masks = (cl_int*)gcl_malloc(sizeof(cl_int) * nofB, masks, CL_MEM_READ_ONLY | CL_MEM_COPY_HOST_PTR);
                 }
             }
+            std::lock_guard<std::mutex> lck(mut);
 //        }
             cv.notify_all();
         }
         printf("leaving gpu\n");
+        cv.notify_all();
         gcl_free(cl_pX);
         gcl_free(cl_pY);
         gcl_free(cl_vX);
@@ -141,6 +144,7 @@ void enqueueOnDevice(float* pX, float* pY, float* vX, float* vY, float* masses, 
         gcl_free(cl_nofB);
     });
     status = KILL;
+    printf("kill status %d\n", status == KILL);
     cv.notify_all();
     dispatch_release(queue);
 }
