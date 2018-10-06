@@ -48,10 +48,17 @@ int main() {
   collisions[0] = collisions[1] = 0;
   int cnt = 0;
 #pragma acc data copyin(pX, pY, pZ, vX, vY, vZ, masses, collisions, nofB)
-  while(cnt++ < 100 && !sig){
+  while(
+#ifdef ITERATIONS 
+      cnt++ < ITERATIONS &&
+#endif
+    !sig){
+#ifdef ITERATIONS
     if (cnt % 1000 == 0){
       printf("%d\n", cnt);
     }
+#endif
+
 #pragma acc data copyout(pX, pY, pZ)
     for(int i = 0; i < 100; ++i){
       int curr;

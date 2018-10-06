@@ -1,6 +1,8 @@
 # other compilers work but this is the once that I've used before
 CC=pgc++
-OPTS=-Minfo=accel -O3
+# uncomment the stuff on the next line to have a limited number of iterations
+# instead of an infinite loop
+OPTS=-Minfo=accel -O3 #-DITERATIONS=100
 SRC=main.cpp SolarSystem.cpp
 
 all: 
