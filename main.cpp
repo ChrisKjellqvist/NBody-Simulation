@@ -5,6 +5,7 @@
 #include <iostream>
 #include <math.h>
 #include "SolarSystem.hpp"
+#include "constants.hpp"
 #ifndef VARIABLE_TS
 #define TIME_STEP 1.0
 #endif
@@ -21,6 +22,7 @@
 #if NOFB_INIT < 2
 #error "NOFB_INIT must be defined as 2 or more"
 #endif
+
 
 
 int nofB = NOFB_INIT;

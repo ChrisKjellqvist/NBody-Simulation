@@ -3,7 +3,7 @@ CC=pgc++
 #CC=clang++-5.0
 # uncomment the stuff on the next line to have a limited number of iterations
 # instead of an infinite loop
-OPTS= -Minfo=accel -O3 -DITERATIONS=200
+OPTS= -Minfo=accel -O3
 SRC=main.cpp SolarSystem.cpp
 
 all: 

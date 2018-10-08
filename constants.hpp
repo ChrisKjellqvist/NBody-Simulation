@@ -1,0 +1,7 @@
+#ifndef CONSTANTS_NBODY_HPP
+#define CONSTANTS_NBODY_HPP
+
+int NOFB_INIT = 512;
+//int ITERATIONS = 1000;
+
+#endif
