@@ -33,3 +33,6 @@ NOFB_INIT - the initial number of starting bodies
 
 ITERATIONS - uncomment this line and specify the number of iterations desired to run for
 some number of iterations
+
+## Future work
+I currently use OpenACC to accelerate on the GPU. I could swap this to OpenMP offloading in the future.
